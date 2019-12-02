@@ -19,21 +19,27 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
         input_data.push(line.trim().parse::<i64>()?);
     }
 
-
     // for each mass in input_data, calculate the fuel required
     // then sum
     let mut total_fuel_required = 0;
-    for mass in  &input_data {
+    for mass in &input_data {
         total_fuel_required += fuel_from_mass(*mass)
     }
 
     println!("Total fuel required: {}", total_fuel_required);
 
+    // Alternative method:
+    // let input_data = &mut vec![];
+    // for line in lines {
+    //     input_data.push(line.trim().parse::<i64>()?);
+    // }
+    // let total_fuel_required = input_data
+    //     .into_iter()
+    //     .fold(0, |acc, mass| acc + fuel_from_mass(*mass));
 
     // Part two: fuel itself has mass, so needs fuel
-
     let mut total_fuel_required_refined = 0;
-    for mass in  &input_data {
+    for mass in &input_data {
         total_fuel_required_refined += fuel_from_mass_with_fuel_mass_included(*mass)
     }
 
