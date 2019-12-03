@@ -21,26 +21,21 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 
     // Transfrom into a set of lines, given by (start_coord, end_coord)
 
-    let first_wire_coords = parse_wire_stringarray_to_coord_list(&first_wire);
-    let second_wire_coords = parse_wire_stringarray_to_coord_list(&second_wire);
+    let first_wire_segments = parse_wire_stringarray_to_segment_list(&first_wire);
+    let second_wire_segments = parse_wire_stringarray_to_segment_list(&second_wire);
 
     // For every segment in the second wire, see if a segment in the first wire crosses it.
 
-    for i in 0..first_wire_coords.len() - 1 {
-        let first_wire_segment_start = first_wire_coords[i];
-        let first_wire_segment_end = first_wire_coords[i + 1];
+    for first_segment in &first_wire_segments {
+        let first_wire_segment_start = first_segment.start;
+        let first_wire_segment_end = first_segment.end;
 
-        for i in 0..second_wire_coords.len() - 1 {
-            let second_wire_segment_start = second_wire_coords[i];
-            let second_wire_segment_end = second_wire_coords[i + 1];
+        for second_segment in &second_wire_segments {
+            let second_wire_segment_start = second_segment.start;
+            let second_wire_segment_end = second_segment.end;
 
             // do these two lines cross
-            let line_crossing = do_lines_cross(
-                first_wire_segment_start,
-                first_wire_segment_end,
-                second_wire_segment_start,
-                second_wire_segment_end,
-            );
+            let line_crossing = do_lines_cross(first_segment, second_segment);
             if line_crossing {
                 println!("{:?}", first_wire_segment_start);
                 println!("{:?}", first_wire_segment_end);
@@ -51,49 +46,53 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     }
 
     println!("{:?}", first_wire);
-    println!("{:?}", first_wire_coords);
+    println!("{:?}", first_wire_segments);
     // println!("{:?}",  second_wire);
 
     Ok(())
 }
 
-fn parse_wire_stringarray_to_coord_list(wire_string_array: &Vec<&str>) -> Vec<[i32; 2]> {
-    let mut wire_coords = vec![[0, 0]];
+fn parse_wire_stringarray_to_segment_list(wire_string_array: &Vec<&str>) -> Vec<WireSegment> {
+    let mut wire_coords = Vec::new();
     let mut prev_coord = [0, 0];
     for segment in wire_string_array {
         let (direction, magnitude) = segment.split_at(1);
         let magnitude = magnitude.parse::<i32>().unwrap();
         let [prev_x, prev_y] = prev_coord;
+        let mut new_coord = [0, 0];
         if direction == "U" {
-            prev_coord = [prev_x, prev_y + magnitude];
+            new_coord = [prev_x, prev_y + magnitude];
         }
         if direction == "D" {
-            prev_coord = [prev_x, prev_y - magnitude];
+            new_coord = [prev_x, prev_y - magnitude];
         }
         if direction == "R" {
-            prev_coord = [prev_x + magnitude, prev_y];
+            new_coord = [prev_x + magnitude, prev_y];
         }
         if direction == "L" {
-            prev_coord = [prev_x - magnitude, prev_y];
+            new_coord = [prev_x - magnitude, prev_y];
         }
-        wire_coords.push(prev_coord);
+        let segment = WireSegment {
+            start: prev_coord,
+            end: new_coord,
+            direction: direction.to_string(),
+        };
+        wire_coords.push(segment);
+        prev_coord = new_coord
     }
-
     wire_coords
 }
 
-fn do_lines_cross(
-    first_wire_segment_start: [i32; 2],
-    first_wire_segment_end: [i32; 2],
-    second_wire_segment_start: [i32; 2],
-    second_wire_segment_end: [i32; 2],
-) -> bool {
-
+fn do_lines_cross(first_wire_segment: &WireSegment, second_wire_segment: &WireSegment) -> bool {
     // Check whether the two lines cross
     // Two conditions: they're either parallel, or perpendicular
-    
-
-
 
     false
+}
+
+#[derive(Debug)]
+struct WireSegment {
+    start: [i32; 2],
+    end: [i32; 2],
+    direction: String,
 }
