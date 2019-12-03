@@ -26,9 +26,11 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 
     // For every segment in the second wire, see if a segment in the first wire crosses it.
 
-    let mut nearest_crossing: [i32; 2] = [1000000000, 1000000000];
-
+    let mut nearest_crossing_manhattan: [i32; 2] = [1000000000, 1000000000];
+    let mut nearest_crossing_wire_timing: i32 = 1000000000;
+    let mut first_wire_timing: i32 = 0;
     for first_segment in &first_wire_segments {
+        let mut second_wire_timing: i32 = 0;
         for second_segment in &second_wire_segments {
             // do these two lines cross
             let line_crossing: Option<[i32; 2]> = do_lines_cross(first_segment, second_segment);
@@ -36,16 +38,45 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
             match line_crossing {
                 None => (),
                 Some(crossing) => {
+                    // If there's a crossing, get the total length of wire to this point.
+                    // Then add the length of the wire up the the crossing point.
+                    // This is the distance from first_segment.start to the crossing,
+                    // Plus the distance from second_segment.start to the crossing.
+                    let crossing_total_timing = first_wire_timing
+                        + second_wire_timing
+                        + (first_segment.start[0] - crossing[0]).abs()
+                        + (first_segment.start[1] - crossing[1]).abs()
+                        + (second_segment.start[0] - crossing[0]).abs()
+                        + (second_segment.start[1] - crossing[1]).abs();
+
+                    if crossing_total_timing < nearest_crossing_wire_timing {
+                        nearest_crossing_wire_timing = crossing_total_timing;
+                    }
+
                     if crossing[0].abs() + crossing[1].abs()
-                        < nearest_crossing[0].abs() + nearest_crossing[1].abs()
+                        < nearest_crossing_manhattan[0].abs() + nearest_crossing_manhattan[1].abs()
                     {
-                        nearest_crossing = [crossing[0], crossing[1]];
+                        nearest_crossing_manhattan = [crossing[0], crossing[1]];
                     }
                 }
             }
+            let second_wire_magnitude = (second_segment.start[0] - second_segment.end[0]).abs()
+                + (second_segment.start[1] - second_segment.end[1]).abs();
+            second_wire_timing += second_wire_magnitude;
         }
+        let first_wire_magnitude = (first_segment.start[0] - first_segment.end[0]).abs()
+            + (first_segment.start[1] - first_segment.end[1]).abs();
+        first_wire_timing += first_wire_magnitude;
     }
-    println!("{:?}", nearest_crossing);
+    println!(
+        "Location of nearest crossing by Manhattan distance: {:?}",
+        nearest_crossing_manhattan
+    );
+    println!(
+        "Magnitude of nearest crossing by total wire length to that point: {:?}",
+        nearest_crossing_wire_timing
+    );
+
     // println!("{:?}", first_wire_segments);
     // println!("{:?}",  second_wire);
 
