@@ -80,44 +80,29 @@ fn is_valid_part_two(digits: Vec<i32>) -> bool {
     // And the digits never decrease
 
     let mut prev_digit = 0;
+    let mut change_indices = vec![];
     let mut exactly_pair_equal = false;
     let mut decreasing = false;
-    let mut sets = vec![];
-    let mut set = vec![];
-    for &digit in &digits {
+
+    for (i, digit) in digits.clone().into_iter().enumerate() {
         if digit < prev_digit {
             decreasing = true;
             break;
         }
-        if digit == prev_digit {
-            set.push(digit);
-        } else {
-            sets.push(set);
-            set = vec![digit];
+        if digit != prev_digit {
+            change_indices.push(i);
         }
         prev_digit = digit;
     }
-    sets.push(set);
+    change_indices.push(digits.len());
 
-    for set in &sets {
-        if set.len() == 2 {
+    // Now we have the index of every point at which the digit changes.
+    // If that gap is equal to 2, we have a pair.
+    for i in 1..change_indices.len() {
+        if change_indices[i] - change_indices[i - 1] == 2 {
             exactly_pair_equal = true;
-            break;
         }
     }
 
     !decreasing && exactly_pair_equal
 }
-
-// if !decreasing {
-//     println!("hit");
-//     println!("{:?}", digits);
-//     println!("{:?}", sets);
-
-//     for set in &sets {
-//         if set.len() > 3 {
-//             println!("{:?}", digits);
-//             println!("{:?}", sets);
-//             break;
-//         }
-//     }
