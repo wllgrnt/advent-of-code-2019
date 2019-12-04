@@ -18,17 +18,17 @@ fn run(password_range: [i32; 2]) -> Result<(), Box<dyn Error>> {
 
     How many passwords meet this criteria?
     */
-
+    let mut num_passwords = 0;
     for candidate_password in password_range[0]..password_range[1] {
-        println!("{:?}", candidate_password);
         // Get the digits in order
-        
         let digits = get_digits(candidate_password);
-        println!{"{:?}", digits}
+        if is_valid(digits) {
+            num_passwords += 1;
+        }
     }
+    println!("Num of valid passwords: {}", num_passwords);
     Ok(())
 }
-
 
 fn get_digits(n: i32) -> Vec<i32> {
     fn x_inner(n: i32, xs: &mut Vec<i32>) {
@@ -40,4 +40,24 @@ fn get_digits(n: i32) -> Vec<i32> {
     let mut xs = Vec::new();
     x_inner(n, &mut xs);
     xs
+}
+
+fn is_valid(digits: Vec<i32>) -> bool {
+    // Check that at least two digits are same
+    // And the digits never decrease
+
+    let mut prev_digit = 0;
+    let mut pair_equal = false;
+    let mut decreasing = false;
+    for digit in digits {
+        if digit < prev_digit {
+            decreasing = true;
+            break;
+        }
+        if digit == prev_digit {
+            pair_equal = true;
+        }
+        prev_digit = digit;
+    }
+    !decreasing && pair_equal
 }
