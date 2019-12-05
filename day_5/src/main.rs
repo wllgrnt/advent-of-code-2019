@@ -26,16 +26,114 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 
     let input_value: i32 = 1; // see problem statement
     let mut cursor: usize = 0;
-    run_tape(instruction_set, cursor, input_value);
+    run_tape(instruction_set, cursor);
 
     Ok(())
 }
 
-fn run_tape(mut memory: Vec<i32>, mut cursor: usize, input_value: i32) -> () {
+fn run_tape(mut memory: Vec<i32>, mut cursor: usize) -> () {
     loop {
-        let instruction = Instruction::new(&memory, cursor);
+        // Read the memory at the cursor position, and parse the opcode.
+        let instruction = Instruction::new(&mut memory, cursor);
         println!("{:?}", instruction);
-        cursor += instruction.parameters.len() + 1; // +1 to include the opcode
+        process_instruction(&mut memory, &instruction);
+        cursor += &instruction.parameters.len() + 1; // +1 to include the opcode
+    }
+}
+
+fn process_instruction(memory: &mut Vec<i32>, instruction: &Instruction) -> () {
+    // match of the opcode
+
+    match instruction.opcode {
+        OpcodeKind::Add => {
+            // parameters are [noun, verb, target]
+            let noun_mode = instruction.modes[0];
+            let mut noun_value = -1; // THIS IS DANGEROUS
+            let mut verb_value = -1;
+
+            if noun_mode == 0 {
+                // then it is position mode
+                let noun_position = instruction.parameters[0] as usize;
+                noun_value = memory[noun_position];
+            } else if noun_mode == 1 {
+                // then it is immediate mode
+                noun_value = instruction.parameters[0];
+            } else {
+                panic!("unexpected mode")
+            }
+            let verb_mode = instruction.modes[1];
+            if verb_mode == 0 {
+                // then it is position mode
+                let verb_position = instruction.parameters[1] as usize;
+                verb_value = memory[verb_position];
+            } else if verb_mode == 1 {
+                // then it is immediate mode
+                verb_value = instruction.parameters[1];
+            } else {
+                panic!("unexpected mode")
+            }
+
+            let result = noun_value + verb_value;
+            let result_position = instruction.parameters[2] as usize;
+            memory[result_position] = result;
+        }
+        OpcodeKind::Multiply => {
+            // parameters are [noun, verb, target]
+            let noun_mode = instruction.modes[0];
+            let mut noun_value = -1; // THIS IS DANGEROUS
+            let mut verb_value = -1;
+
+            if noun_mode == 0 {
+                // then it is position mode
+                let noun_position = instruction.parameters[0] as usize;
+                noun_value = memory[noun_position];
+            } else if noun_mode == 1 {
+                // then it is immediate mode
+                noun_value = instruction.parameters[0];
+            } else {
+                panic!("unexpected mode")
+            }
+            let verb_mode = instruction.modes[1];
+            if verb_mode == 0 {
+                // then it is position mode
+                let verb_position = instruction.parameters[1] as usize;
+                verb_value = memory[verb_position];
+            } else if verb_mode == 1 {
+                // then it is immediate mode
+                verb_value = instruction.parameters[1];
+            } else {
+                panic!("unexpected mode")
+            }
+
+            let result = noun_value * verb_value;
+            let result_position = instruction.parameters[2] as usize;
+            memory[result_position] = result;
+        }
+        OpcodeKind::Input => {
+            println!("Please give program input.");
+
+            let mut input = String::new();
+            std::io::stdin()
+                .read_line(&mut input)
+                .expect("Failed to read input");
+            // Write input to the memory in position given by the parameter
+            let position: usize = instruction.parameters[0] as usize;
+            memory[position] = input.trim().parse().unwrap();
+        }
+        OpcodeKind::Output => {
+            let mode = instruction.modes[0];
+            if mode == 0 {
+                let position: usize = instruction.parameters[0] as usize;
+                let value = memory[position];
+                println!("Instruction output: {}", value);
+            } else if mode == 1 {
+                let value = instruction.parameters[0];
+                println!("Instruction output: {}", value);
+            }
+        }
+        OpcodeKind::Exit => {
+            std::process::exit(0);
+        }
     }
 }
 
@@ -78,7 +176,6 @@ impl Instruction {
         // Make immutable
         let int_to_operation_map = int_to_operation_map;
 
-        println!("{}", opcode_value );
         match opcode_value {
             3 => {
                 let opcode: OpcodeKind = *int_to_operation_map.get(&3).expect("Opcode not found!");
@@ -93,7 +190,14 @@ impl Instruction {
             }
             4 => {
                 let opcode: OpcodeKind = *int_to_operation_map.get(&4).expect("Opcode not found!");
-                let modes: Vec<i32> = Vec::new();
+                
+                let digits = get_digits(opcode_value);
+                let mut modes: Vec<i32> = Vec::new();
+                if digits.len() == 3 {
+                    assert_eq!(digits[0], 4);
+                    assert_eq!(digits[1], 4);
+                    modes.push(digits[2]);
+                }
                 let parameters = vec![memory[cursor + 1]];
                 return Instruction {
                     opcode_value: opcode_value,
@@ -121,7 +225,6 @@ impl Instruction {
                 let opcode: OpcodeKind = *int_to_operation_map
                     .get(&opcode)
                     .expect("Opcode not found!");
-                
                 let zero = digits.next();
                 match zero {
                     Some(0) => {
@@ -129,29 +232,30 @@ impl Instruction {
                         while modes.len() < 3 {
                             modes.push(0);
                         }
-                        let parameters: Vec<i32> = vec![memory[cursor+1], memory[cursor+2], memory[cursor+3]];
+                        let parameters: Vec<i32> =
+                            vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]];
                         return Instruction {
                             opcode_value: opcode_value,
                             opcode: opcode,
                             modes: modes,
                             parameters: parameters,
                         };
-                    },
+                    }
                     None => {
-                        let modes: Vec<i32> = vec![0,0,0];
-                        let parameters: Vec<i32> = vec![memory[cursor+1], memory[cursor+2], memory[cursor+3]];
+                        let modes: Vec<i32> = vec![0, 0, 0];
+                        let parameters: Vec<i32> =
+                            vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]];
                         return Instruction {
                             opcode_value: opcode_value,
                             opcode: opcode,
                             modes: modes,
                             parameters: parameters,
                         };
-                    },
+                    }
                     _ => panic!("crash and burn"),
                 }
             }
         };
-
     }
 }
 
