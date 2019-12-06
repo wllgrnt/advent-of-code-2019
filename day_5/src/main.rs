@@ -16,6 +16,8 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     // Read the input file
     let contents = fs::read_to_string(filename)?;
     // Convert comma-separated string to vector of ints
+    // let contents = "3,21,1008,21,8,20,1005,20,22,107,8,21,20,1006,20,31,1106,0,36,98,0,0,1002,21,125,20,4,20,1105,1,46,104,999,1105,1,46,1101,1000,1,20,4,20,1105,1,46,98,99";
+    // let contents = "3,9,7,9,10,9,4,9,99,-1,8";
     let mut instruction_set: Vec<i32> = contents
         .trim()
         .split(",")
@@ -33,8 +35,7 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 fn run_tape(mut memory: Vec<i32>, mut cursor: usize) -> () {
     loop {
         // Read the memory at the cursor position, and parse the opcode.
-        println!("{}", cursor);
-        
+        println!("cursor position: {}", cursor);
         let instruction = Instruction::new(&mut memory, cursor);
         println!("{:?}", instruction);
         let prev_cursor = cursor;
@@ -129,10 +130,10 @@ fn process_instruction(memory: &mut Vec<i32>, instruction: &Instruction, cursor:
             if mode == 0 {
                 let position: usize = instruction.parameters[0] as usize;
                 let value = memory[position];
-                println!("Instruction output: {}", value);
+                println!("***********Instruction output: {}", value);
             } else if mode == 1 {
                 let value = instruction.parameters[0];
-                println!("Instruction output: {}", value);
+                println!("***********Instruction output: {}", value);
             }
         }
 
@@ -146,7 +147,12 @@ fn process_instruction(memory: &mut Vec<i32>, instruction: &Instruction, cursor:
                 condition = instruction.parameters[0] != 0;
             }
             if condition {
-                *cursor = instruction.parameters[1] as usize;
+                if instruction.modes[1] == 0 {
+                    let position: usize = instruction.parameters[1] as usize;
+                    *cursor = memory[position] as usize;
+                } else if instruction.modes[1] == 1 {
+                    *cursor = instruction.parameters[1] as usize;
+                }
             }
         }
         OpcodeKind::JumpIfFalse => {
@@ -159,7 +165,12 @@ fn process_instruction(memory: &mut Vec<i32>, instruction: &Instruction, cursor:
                 condition = instruction.parameters[0] == 0;
             }
             if condition {
-                *cursor = instruction.parameters[1] as usize;
+                if instruction.modes[1] == 0 {
+                    let position: usize = instruction.parameters[1] as usize;
+                    *cursor = memory[position] as usize;
+                } else if instruction.modes[1] == 1 {
+                    *cursor = instruction.parameters[1] as usize;
+                }
             }
         }
         OpcodeKind::IsLessThan => {
@@ -349,8 +360,10 @@ impl Instruction {
                             parameters: parameters,
                         };
                     }
-                    _ => {println!("{}", opcode_value);
-                            panic!("crash and burn")},
+                    _ => {
+                        println!("{}", opcode_value);
+                        panic!("crash and burn")
+                    }
                 }
             }
         };
