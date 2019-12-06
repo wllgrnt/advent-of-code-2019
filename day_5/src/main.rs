@@ -146,6 +146,10 @@ enum OpcodeKind {
     Multiply,
     Input,
     Output,
+    // JumpIfTrue,
+    // JumpyIfFalse,
+    // IsLessThan,
+    // IsEquals,
     Exit,
 }
 
@@ -171,6 +175,10 @@ impl Instruction {
         int_to_operation_map.insert(2, OpcodeKind::Multiply);
         int_to_operation_map.insert(3, OpcodeKind::Input);
         int_to_operation_map.insert(4, OpcodeKind::Output);
+        // int_to_operation_map.insert(5, OpcodeKind::JumpIfTrue);
+        // int_to_operation_map.insert(6, OpcodeKind::JumpyIfFalse);
+        // int_to_operation_map.insert(7, OpcodeKind::IsLessThan);
+        // int_to_operation_map.insert(8, OpcodeKind::IsEquals);
         int_to_operation_map.insert(99, OpcodeKind::Exit);
 
         // Make immutable
@@ -188,26 +196,8 @@ impl Instruction {
                     parameters: parameters,
                 };
             }
-            4 => {
-                let opcode: OpcodeKind = *int_to_operation_map.get(&4).expect("Opcode not found!");
-                
-                let digits = get_digits(opcode_value);
-                let mut modes: Vec<i32> = Vec::new();
-                if digits.len() == 3 {
-                    assert_eq!(digits[0], 4);
-                    assert_eq!(digits[1], 4);
-                    modes.push(digits[2]);
-                }
-                let parameters = vec![memory[cursor + 1]];
-                return Instruction {
-                    opcode_value: opcode_value,
-                    opcode: opcode,
-                    modes: modes,
-                    parameters: parameters,
-                };
-            }
             99 => {
-                let opcode: OpcodeKind = *int_to_operation_map.get(&4).expect("Opcode not found!");
+                let opcode: OpcodeKind = *int_to_operation_map.get(&99).expect("Opcode not found!");
                 let modes: Vec<i32> = Vec::new();
                 let parameters: Vec<i32> = Vec::new();
                 return Instruction {
@@ -217,13 +207,14 @@ impl Instruction {
                     parameters,
                 };
             }
+
             _ => {
-                // Then its 1 or 2.
+                // Then its 4
 
                 let mut digits = get_digits(opcode_value).into_iter().rev();
-                let opcode = digits.next().unwrap().clone();
+                let opcode_int = digits.next().unwrap().clone();
                 let opcode: OpcodeKind = *int_to_operation_map
-                    .get(&opcode)
+                    .get(&opcode_int)
                     .expect("Opcode not found!");
                 let zero = digits.next();
                 match zero {
@@ -232,8 +223,14 @@ impl Instruction {
                         while modes.len() < 3 {
                             modes.push(0);
                         }
-                        let parameters: Vec<i32> =
-                            vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]];
+
+                        let parameters: Vec<i32> = match opcode_int {
+                            4 => vec![memory[cursor + 1]],
+                            1 => vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]],
+                            2 => vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]],
+                            _ => panic!("opcode not found!"),
+                        };
+
                         return Instruction {
                             opcode_value: opcode_value,
                             opcode: opcode,
@@ -243,8 +240,13 @@ impl Instruction {
                     }
                     None => {
                         let modes: Vec<i32> = vec![0, 0, 0];
-                        let parameters: Vec<i32> =
-                            vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]];
+                        let parameters: Vec<i32> = match opcode_int {
+                            4 => vec![memory[cursor + 1]],
+                            1 => vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]],
+                            2 => vec![memory[cursor + 1], memory[cursor + 2], memory[cursor + 3]],
+                            _ => panic!("opcode not found!"),
+                        };
+
                         return Instruction {
                             opcode_value: opcode_value,
                             opcode: opcode,
