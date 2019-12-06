@@ -1,4 +1,4 @@
-// Day 5
+// Day 6
 
 use std::error::Error;
 use std::fs;
@@ -15,22 +15,68 @@ fn main() {
 fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     // Read the input file
     let contents = fs::read_to_string(filename)?;
-    
     // Create the set of nodes and directed edges, build a graph
+    // let mut edge_list: Vec<Link> = Vec::new();
+    // Iternally, a graph is just a list of nodes, and a set of edges.edge_list
+
+    let contents = "COM)B
+    B)C
+    C)D
+    D)E
+    E)F
+    B)G
+    G)H
+    D)I
+    E)J
+    J)K
+    K)L";
     let mut edge_list: Vec<Link> = Vec::new();
     for line in contents.lines() {
-        let edge: Vec<&str> = line.split(")").collect();
+        let edge: Vec<&str> = line.trim().split(")").collect();
         let link: Link = Link {
             source: edge[0].to_string(),
             target: edge[1].to_string(),
         };
         edge_list.push(link);
     }
+    let edge_list = edge_list; // make immutable
+    let graph = Graph::new(&edge_list);
+
+    println!("{:?}", graph.node_set);
+
+    println!("{:?}", graph.node_set.len());
 
     Ok(())
 }
 
 #[derive(Debug)]
+struct Graph {
+    edge_list: Vec<Link>,
+    node_set: std::collections::HashSet<String>,
+}
+
+impl Graph {
+    fn new(edge_list: &Vec<Link>) -> Graph {
+        // initialise the Graph from an edge_list
+        let mut node_set = std::collections::HashSet::new();
+        for edge in edge_list.clone() {
+            let (node_1, node_2) = (edge.source, edge.target);
+            // println!("{}, {}", node_1, node_2);
+            if !node_set.contains(&node_1) {
+                node_set.insert(node_1);
+            }
+            if !node_set.contains(&node_2) {
+                node_set.insert(node_2);
+            }
+        }
+        Graph {
+            edge_list: edge_list.clone(),
+            node_set: node_set,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 struct Link {
     source: String,
     target: String,

@@ -38,3 +38,10 @@ Here, we can count the total number of orbits as follows:
 The total number of direct and indirect orbits in this example is 42.
 
 What is the total number of direct and indirect orbits in your map data?
+
+
+## Initial thoughts
+
+This is trivial once you've built a DAG. Then it's just the distance from each node to COM.
+
+There might be libraries for this stuff in Rust, but lets code it from scratch.
