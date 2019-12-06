@@ -44,7 +44,15 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 
     println!("{:?}", graph.node_set);
 
-    println!("{:?}", graph.node_set.len());
+    for node in &graph.node_set {
+        if node == "COM" {
+            continue;
+        }
+
+        let distance: u32 = graph.distance_from_root(&node).clone();
+
+        println!("{} distance from root: {}", node, distance);
+    }
 
     Ok(())
 }
@@ -73,6 +81,17 @@ impl Graph {
             edge_list: edge_list.clone(),
             node_set: node_set,
         }
+    }
+
+    //  Get the distance from a node to the root node, "COM"
+    fn distance_from_root(&self, node: &String) -> u32 {
+        if !self.node_set.contains(node) {
+            panic!("node not found!");
+        }
+
+        // perform a search from the root node to the target node
+
+        0
     }
 }
 
