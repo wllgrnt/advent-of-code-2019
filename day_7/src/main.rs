@@ -15,7 +15,6 @@ fn main() {
 fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     // Read the input file
     let contents = fs::read_to_string(filename)?;
-    let contents = "3,15,3,16,1002,16,10,16,1,16,15,15,4,15,99,0,0";
 
     let instruction_set: Vec<i32> = contents
         .trim()
@@ -23,17 +22,28 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
         .map(|x| x.parse().unwrap())
         .collect();
 
-    // Copy the instruction set to each Amplifier    
+    // Copy the instruction set to each Amplifier
 
-
-    // Vary the phase value from 0 to 4, inclusive, for each. Hold the max value
+    // The phase values are [0,1,2,3,4], but in an unknown order.
     let mut max_output = 0;
-    let mut max_config = (0,0,0,0,0);
+    let mut max_config = (0, 0, 0, 0, 0);
     for a in 0..5 {
         for b in 0..5 {
+            if a == b {
+                continue;
+            }
             for c in 0..5 {
+                if c == a || c == b {
+                    continue;
+                }
                 for d in 0..5 {
-                    for e in 0..5{
+                    if d == a || d == b || d == c {
+                        continue;
+                    }
+                    for e in 0..5 {
+                        if e == a || e == b || e == c || e == d {
+                            continue;
+                        }
                         let input_value = 0;
                         let mut amplifier_a: Amplifier = Amplifier::new(instruction_set.clone());
                         let mut amplifier_b: Amplifier = Amplifier::new(instruction_set.clone());
@@ -45,23 +55,19 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
                         amplifier_c.run_tape(amplifier_b.output_signal.unwrap(), c);
                         amplifier_d.run_tape(amplifier_c.output_signal.unwrap(), d);
                         amplifier_e.run_tape(amplifier_d.output_signal.unwrap(), e);
-                    
                         let output_signal = amplifier_e.output_signal.unwrap();
                         if output_signal > max_output {
                             max_output = output_signal;
-                            max_config = (a,b,c,d,e);
+                            max_config = (a, b, c, d, e);
                         }
-                    
-
                     }
                 }
             }
         }
-    } 
+    }
 
-    println!("Largest possible output: {}", max_output );
-    println!("Config: {:?}", max_config );
-
+    println!("Largest possible output: {}", max_output);
+    println!("Config: {:?}", max_config);
 
     Ok(())
 }
@@ -221,9 +227,7 @@ impl Amplifier {
         let mut phase_value_processed = false;
         loop {
             // Read the memory at the cursor position, and parse the opcode.
-            println!("cursor position: {}", self.cursor);
             let instruction = Instruction::new(&self.memory, self.cursor);
-            println!("{:?}", instruction);
             let prev_cursor = self.cursor;
             // We need a way to get the two inputs in when required, and extract the output.
             match instruction.opcode {
