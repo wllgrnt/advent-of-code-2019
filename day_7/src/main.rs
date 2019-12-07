@@ -25,201 +25,15 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     println!("{:?}", instruction_set);
 
     // Copy the instruction set to each Amplifier
-    let amplifier_a: Amplifier = Amplifier::new(instruction_set.clone());
+    let mut amplifier_a: Amplifier = Amplifier::new(instruction_set.clone());
 
-    let cursor: usize = 0;
-    run_tape(instruction_set, cursor);
+    let input_value = 0;
+    let phase_value = 0;
+    let output_value = amplifier_a.run_tape(input_value, phase_value);
+
+    println!("{}", output_value);
 
     Ok(())
-}
-
-fn run_tape(mut memory: Vec<i32>, mut cursor: usize) -> () {
-    loop {
-        // Read the memory at the cursor position, and parse the opcode.
-        println!("cursor position: {}", cursor);
-        let instruction = Instruction::new(&mut memory, cursor);
-        println!("{:?}", instruction);
-        let prev_cursor = cursor;
-        process_instruction(&mut memory, &instruction, &mut cursor);
-        if cursor == prev_cursor {
-            cursor += &instruction.parameters.len() + 1; // +1 to include the opcode
-        }
-    }
-}
-
-fn process_instruction(memory: &mut Vec<i32>, instruction: &Instruction, cursor: &mut usize) -> () {
-    // match of the opcode
-
-    match instruction.opcode {
-        OpcodeKind::Add => {
-            // parameters are [noun, verb, target]
-            let noun_mode = instruction.modes[0];
-            let noun_value = match noun_mode {
-                0 => {
-                    let noun_position = instruction.parameters[0] as usize;
-                    memory[noun_position]
-                }
-                1 => instruction.parameters[0],
-                _ => panic!("unexpected mode"),
-            };
-
-            let verb_mode = instruction.modes[1];
-            let verb_value = match verb_mode {
-                0 => {
-                    let verb_position = instruction.parameters[1] as usize;
-                    memory[verb_position]
-                }
-                1 => instruction.parameters[1],
-                _ => panic!("unexpected mode"),
-            };
-            let result = noun_value + verb_value;
-            let result_position = instruction.parameters[2] as usize;
-            memory[result_position] = result;
-        }
-        OpcodeKind::Multiply => {
-            // parameters are [noun, verb, target]
-            let noun_mode = instruction.modes[0];
-            let noun_value = match noun_mode {
-                0 => {
-                    let noun_position = instruction.parameters[0] as usize;
-                    memory[noun_position]
-                }
-                1 => instruction.parameters[0],
-                _ => panic!("unexpected mode"),
-            };
-
-            let verb_mode = instruction.modes[1];
-            let verb_value = match verb_mode {
-                0 => {
-                    let verb_position = instruction.parameters[1] as usize;
-                    memory[verb_position]
-                }
-                1 => instruction.parameters[1],
-                _ => panic!("unexpected mode"),
-            };
-            let result = noun_value * verb_value;
-            let result_position = instruction.parameters[2] as usize;
-            memory[result_position] = result;
-        }
-        OpcodeKind::Input => {
-            println!("Please give program input.");
-
-            let mut input = String::new();
-            std::io::stdin()
-                .read_line(&mut input)
-                .expect("Failed to read input");
-            // Write input to the memory in position given by the parameter
-            let position: usize = instruction.parameters[0] as usize;
-            memory[position] = input.trim().parse().unwrap();
-        }
-        OpcodeKind::Output => {
-            let mode = instruction.modes[0];
-            if mode == 0 {
-                let position: usize = instruction.parameters[0] as usize;
-                let value = memory[position];
-                println!("***********Instruction output: {}", value);
-            } else if mode == 1 {
-                let value = instruction.parameters[0];
-                println!("***********Instruction output: {}", value);
-            }
-        }
-
-        OpcodeKind::JumpIfTrue => {
-            let mode = instruction.modes[0];
-            let mut condition: bool = false;
-            if mode == 0 {
-                let position: usize = instruction.parameters[0] as usize;
-                condition = memory[position] != 0;
-            } else if mode == 1 {
-                condition = instruction.parameters[0] != 0;
-            }
-            if condition {
-                if instruction.modes[1] == 0 {
-                    let position: usize = instruction.parameters[1] as usize;
-                    *cursor = memory[position] as usize;
-                } else if instruction.modes[1] == 1 {
-                    *cursor = instruction.parameters[1] as usize;
-                }
-            }
-        }
-        OpcodeKind::JumpIfFalse => {
-            let mode = instruction.modes[0];
-            let mut condition: bool = false;
-            if mode == 0 {
-                let position: usize = instruction.parameters[0] as usize;
-                condition = memory[position] == 0;
-            } else if mode == 1 {
-                condition = instruction.parameters[0] == 0;
-            }
-            if condition {
-                if instruction.modes[1] == 0 {
-                    let position: usize = instruction.parameters[1] as usize;
-                    *cursor = memory[position] as usize;
-                } else if instruction.modes[1] == 1 {
-                    *cursor = instruction.parameters[1] as usize;
-                }
-            }
-        }
-        OpcodeKind::IsLessThan => {
-            let noun_mode = instruction.modes[0];
-            let noun_value = match noun_mode {
-                0 => {
-                    let noun_position = instruction.parameters[0] as usize;
-                    memory[noun_position]
-                }
-                1 => instruction.parameters[0],
-                _ => panic!("unexpected mode"),
-            };
-
-            let verb_mode = instruction.modes[1];
-            let verb_value = match verb_mode {
-                0 => {
-                    let verb_position = instruction.parameters[1] as usize;
-                    memory[verb_position]
-                }
-                1 => instruction.parameters[1],
-                _ => panic!("unexpected mode"),
-            };
-            if noun_value < verb_value {
-                let result_position = instruction.parameters[2] as usize;
-                memory[result_position] = 1;
-            } else {
-                let result_position = instruction.parameters[2] as usize;
-                memory[result_position] = 0;
-            }
-        }
-        OpcodeKind::IsEquals => {
-            let noun_mode = instruction.modes[0];
-            let noun_value = match noun_mode {
-                0 => {
-                    let noun_position = instruction.parameters[0] as usize;
-                    memory[noun_position]
-                }
-                1 => instruction.parameters[0],
-                _ => panic!("unexpected mode"),
-            };
-
-            let verb_mode = instruction.modes[1];
-            let verb_value = match verb_mode {
-                0 => {
-                    let verb_position = instruction.parameters[1] as usize;
-                    memory[verb_position]
-                }
-                1 => instruction.parameters[1],
-                _ => panic!("unexpected mode"),
-            };
-            if noun_value == verb_value {
-                let result_position = instruction.parameters[2] as usize;
-                memory[result_position] = 1;
-            } else {
-                let result_position = instruction.parameters[2] as usize;
-                memory[result_position] = 0;
-            }
-        }
-        OpcodeKind::Exit => {
-            std::process::exit(0);
-        }
-    }
 }
 
 // Mapping of opcodes to instructions.
@@ -361,19 +175,210 @@ struct Amplifier {
     input_signal: Option<i32>,
     phase_signal: Option<i32>,
     output_signal: Option<i32>,
+    cursor: usize,
 }
 
 impl Amplifier {
-    fn new(memory: Vec<i32>) -> Amplifier {
+    fn new(mut memory: Vec<i32>) -> Amplifier {
         let input_signal = None;
         let phase_signal = None;
         let output_signal = None;
-
+        let mut cursor: usize = 0;
         Amplifier {
             memory: memory,
             input_signal: input_signal,
             phase_signal: phase_signal,
             output_signal: output_signal,
+            cursor,
+        }
+    }
+
+    fn run_tape(&mut self, input_value: i32, phase_value: i32) -> () {
+        loop {
+            // Read the memory at the cursor position, and parse the opcode.
+            println!("cursor position: {}", self.cursor);
+            let instruction = Instruction::new(&self.memory, self.cursor);
+            println!("{:?}", instruction);
+            let prev_cursor = self.cursor;
+
+            // We need a way to get the two inputs in when required, and extract the output.
+            self.process_instruction(&mut self.memory, &instruction, &mut self.cursor);
+            if self.cursor == prev_cursor {
+                self.cursor += &instruction.parameters.len() + 1; // +1 to include the opcode
+            }
+        }
+    }
+
+    fn process_instruction(
+        &mut self,
+        memory: &mut Vec<i32>,
+        instruction: &Instruction,
+        cursor: &mut usize,
+    ) -> () {
+        // match of the opcode
+        match instruction.opcode {
+            OpcodeKind::Add => {
+                // parameters are [noun, verb, target]
+                let noun_mode = instruction.modes[0];
+                let noun_value = match noun_mode {
+                    0 => {
+                        let noun_position = instruction.parameters[0] as usize;
+                        memory[noun_position]
+                    }
+                    1 => instruction.parameters[0],
+                    _ => panic!("unexpected mode"),
+                };
+                let verb_mode = instruction.modes[1];
+                let verb_value = match verb_mode {
+                    0 => {
+                        let verb_position = instruction.parameters[1] as usize;
+                        memory[verb_position]
+                    }
+                    1 => instruction.parameters[1],
+                    _ => panic!("unexpected mode"),
+                };
+                let result = noun_value + verb_value;
+                let result_position = instruction.parameters[2] as usize;
+                memory[result_position] = result;
+            }
+            OpcodeKind::Multiply => {
+                // parameters are [noun, verb, target]
+                let noun_mode = instruction.modes[0];
+                let noun_value = match noun_mode {
+                    0 => {
+                        let noun_position = instruction.parameters[0] as usize;
+                        memory[noun_position]
+                    }
+                    1 => instruction.parameters[0],
+                    _ => panic!("unexpected mode"),
+                };
+                let verb_mode = instruction.modes[1];
+                let verb_value = match verb_mode {
+                    0 => {
+                        let verb_position = instruction.parameters[1] as usize;
+                        memory[verb_position]
+                    }
+                    1 => instruction.parameters[1],
+                    _ => panic!("unexpected mode"),
+                };
+                let result = noun_value * verb_value;
+                let result_position = instruction.parameters[2] as usize;
+                memory[result_position] = result;
+            }
+            OpcodeKind::Input => {
+                println!("Please give program input.");
+                let mut input = String::new();
+                std::io::stdin()
+                    .read_line(&mut input)
+                    .expect("Failed to read input");
+                // Write input to the memory in position given by the parameter
+                let position: usize = instruction.parameters[0] as usize;
+                memory[position] = input.trim().parse().unwrap();
+            }
+            OpcodeKind::Output => {
+                let mode = instruction.modes[0];
+                if mode == 0 {
+                    let position: usize = instruction.parameters[0] as usize;
+                    let value = memory[position];
+                    println!("***********Instruction output: {}", value);
+                } else if mode == 1 {
+                    let value = instruction.parameters[0];
+                    println!("***********Instruction output: {}", value);
+                }
+            }
+            OpcodeKind::JumpIfTrue => {
+                let mode = instruction.modes[0];
+                let mut condition: bool = false;
+                if mode == 0 {
+                    let position: usize = instruction.parameters[0] as usize;
+                    condition = memory[position] != 0;
+                } else if mode == 1 {
+                    condition = instruction.parameters[0] != 0;
+                }
+                if condition {
+                    if instruction.modes[1] == 0 {
+                        let position: usize = instruction.parameters[1] as usize;
+                        *cursor = memory[position] as usize;
+                    } else if instruction.modes[1] == 1 {
+                        *cursor = instruction.parameters[1] as usize;
+                    }
+                }
+            }
+            OpcodeKind::JumpIfFalse => {
+                let mode = instruction.modes[0];
+                let mut condition: bool = false;
+                if mode == 0 {
+                    let position: usize = instruction.parameters[0] as usize;
+                    condition = memory[position] == 0;
+                } else if mode == 1 {
+                    condition = instruction.parameters[0] == 0;
+                }
+                if condition {
+                    if instruction.modes[1] == 0 {
+                        let position: usize = instruction.parameters[1] as usize;
+                        *cursor = memory[position] as usize;
+                    } else if instruction.modes[1] == 1 {
+                        *cursor = instruction.parameters[1] as usize;
+                    }
+                }
+            }
+            OpcodeKind::IsLessThan => {
+                let noun_mode = instruction.modes[0];
+                let noun_value = match noun_mode {
+                    0 => {
+                        let noun_position = instruction.parameters[0] as usize;
+                        memory[noun_position]
+                    }
+                    1 => instruction.parameters[0],
+                    _ => panic!("unexpected mode"),
+                };
+                let verb_mode = instruction.modes[1];
+                let verb_value = match verb_mode {
+                    0 => {
+                        let verb_position = instruction.parameters[1] as usize;
+                        memory[verb_position]
+                    }
+                    1 => instruction.parameters[1],
+                    _ => panic!("unexpected mode"),
+                };
+                if noun_value < verb_value {
+                    let result_position = instruction.parameters[2] as usize;
+                    memory[result_position] = 1;
+                } else {
+                    let result_position = instruction.parameters[2] as usize;
+                    memory[result_position] = 0;
+                }
+            }
+            OpcodeKind::IsEquals => {
+                let noun_mode = instruction.modes[0];
+                let noun_value = match noun_mode {
+                    0 => {
+                        let noun_position = instruction.parameters[0] as usize;
+                        memory[noun_position]
+                    }
+                    1 => instruction.parameters[0],
+                    _ => panic!("unexpected mode"),
+                };
+                let verb_mode = instruction.modes[1];
+                let verb_value = match verb_mode {
+                    0 => {
+                        let verb_position = instruction.parameters[1] as usize;
+                        memory[verb_position]
+                    }
+                    1 => instruction.parameters[1],
+                    _ => panic!("unexpected mode"),
+                };
+                if noun_value == verb_value {
+                    let result_position = instruction.parameters[2] as usize;
+                    memory[result_position] = 1;
+                } else {
+                    let result_position = instruction.parameters[2] as usize;
+                    memory[result_position] = 0;
+                }
+            }
+            OpcodeKind::Exit => {
+                std::process::exit(0);
+            }
         }
     }
 }
