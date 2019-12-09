@@ -21,7 +21,7 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
         .map(|x| x.parse().unwrap())
         .collect();
 
-    let input_value = 1;
+    let input_value = 2;
     let mut compiler: Compiler = Compiler::new(instruction_set.clone());
     compiler.run_tape(input_value);
 
