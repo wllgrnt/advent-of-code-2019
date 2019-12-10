@@ -30,30 +30,55 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     let asteroid_matrix = asteroid_matrix; // immutable
     println!("{:?}", asteroid_matrix);
 
-    let mut max_number_of_seen_asteroids = 0;
-    let mut best_i = 0;
-    let mut best_j = 0;
-    for (i, row) in asteroid_matrix.iter().enumerate() {
-        for (j, value) in row.iter().enumerate() {
-            if *value == 1 {
-                let number_of_seen_asteroids = get_visible_asteroids(&asteroid_matrix, i, j);
-                if number_of_seen_asteroids > max_number_of_seen_asteroids {
-                    max_number_of_seen_asteroids = number_of_seen_asteroids;
-                    best_i = i;
-                    best_j = j;
-                }
-            }
-            println!("At co-ord [{}, {}] is value: {}", i, j, value);
-        }
-    }
+    get_visible_asteroids(asteroid_matrix.clone(), 5, 3);
+
+    // let mut max_number_of_seen_asteroids = 0;
+    // let mut best_i = 0;
+    // let mut best_j = 0;
+    // for (i, row) in asteroid_matrix.iter().enumerate() {
+    //     for (j, value) in row.iter().enumerate() {
+    //         if *value == 1 {
+    //             let number_of_seen_asteroids = get_visible_asteroids(asteroid_matrix.clone(), i, j);
+    //             if number_of_seen_asteroids > max_number_of_seen_asteroids {
+    //                 max_number_of_seen_asteroids = number_of_seen_asteroids;
+    //                 best_i = i;
+    //                 best_j = j;
+    //             }
+    //         }
+    //         println!("At co-ord [{}, {}] is value: {}", i, j, value);
+    //     }
+    // }
 
     Ok(())
 }
 
-fn get_visible_asteroids(asteroid_matrix: &Vec<Vec<u8>>, i: usize, j: usize) -> u32 {
-    // Run over 
+fn get_visible_asteroids(
+    mut asteroid_matrix: Vec<Vec<u8>>,
+    asteroid_i: usize,
+    asteroid_j: usize,
+) -> u32 {
+    // Spiral out from position asteroid_x, asteroid_y. If we spot an asteroid,
+    // Then zero out all the blocked  positions (by repeating the relative offset until we reach the edge)
+
+    // Iterate over rows, from row asteroid_i, asteroid_i+1, ... N then asteroid_i-1, asteroid_i-2, .. 0
+    let n = asteroid_matrix.len();
+    let m = asteroid_matrix[0].len();
+    for i in get_indices(asteroid_i, n) {
+        for j in get_indices(asteroid_j, m) {
+            println!("{}, {}", i, j );
+        }
+        println!("");
+    }
     0
 }
+
+fn get_indices(index: usize, limit: usize) -> Vec<usize> {
+    let front_indices: Vec<usize> = (index..limit).collect();
+    let mut back_indices: Vec<usize> = (0..index).collect();
+    back_indices.reverse();
+    [front_indices, back_indices].concat()
+}
+
 fn parse_char(c: char) -> u8 {
     let hash: char = "#".chars().next().unwrap();
     let dot: char = ".".chars().next().unwrap();
