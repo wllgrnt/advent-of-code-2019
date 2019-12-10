@@ -50,8 +50,59 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
         best_i, best_j, max_number_of_seen_asteroids
     );
 
+    // Part 2. We deploy a laser at the best_i, best_j co-ordinates.
+    // It starts pointing vertically, then rotates clockwise vaporising any asteroids it can see.
+    // What is the 200th asteroid to be vaporised?
+
+    // Algo:
+    // - Get the visible asteroids. Remove them in order.
+    // - Calculate the newly visible asteroids. Remove them.
+    // - Repeat.
+    vaporise_asteroids(asteroid_matrix.clone(), best_i, best_j);
     Ok(())
 }
+
+fn vaporise_asteroids(mut asteroid_matrix: Vec<Vec<u8>>, laser_i: usize, laser_j: usize) -> () {
+    while count_nonzero(&asteroid_matrix) > 1 {
+        // Get the matrix of visible asteroids.
+        let visible_asteroid_indices =
+            get_visible_asteroid_indices(asteroid_matrix.clone(), laser_i, laser_j);
+        
+        // sort these visible asteroid indices according to the angle between them and the laser.
+
+        let visible_asteroid_indices = sort_indices_by_angle(visible_asteroid_indices, laser_i, laser_j);
+
+        for index_array in visible_asteroid_indices {
+            asteroid_matrix[index_array[0]][index_array[1]] = 0;
+        }
+            
+    }
+    // Get the
+}
+
+
+fn sort_indices_by_angle(asteroid_indices: Vec<[usize;2]>, laser_i: usize, laser_j: usize) -> Vec<[usize;2]> {
+
+    // For each [i,j] pair, get the angle between vertical and the [i,j] pair from the laser position.
+    // Once we have these angles, sort according to them and return a sorted array.
+    
+    let mut angles: Vec<f32> = Vec::new();
+
+    for index in &asteroid_indices {
+        let relative_i: f32  = (laser_i as i32 - index[0] as i32) as f32;
+        let relative_j: f32  = (laser_j as i32 - index[1] as i32) as f32;
+        // Whats the orientation of this vector?
+        // tan theta = -rel_i/rel_j. Tan monotonic so just store -rel_i/rel_j
+        let angle:f32 = -relative_i/relative_j;
+        angles.push(angle);
+    }
+
+    // Sort according to angle.
+    
+
+    asteroid_indices
+}
+
 
 fn gcd(m: i8, n: i8) -> i8 {
     if m == 0 {
@@ -89,7 +140,50 @@ fn get_visible_asteroids(
     }
     // Now we should have gotten rid of all asteroids that can't be seen from (asteroid_i, asteroid_j).
     // So just count the non-zero elements of the asteroid matrix (minus 1, for the asteroid itself)
-    count_nonzero(&asteroid_matrix)-1
+    count_nonzero(&asteroid_matrix) - 1
+}
+
+fn get_visible_asteroid_indices(
+    mut asteroid_matrix: Vec<Vec<u8>>,
+    asteroid_i: usize,
+    asteroid_j: usize,
+) -> Vec<[usize; 2]> {
+    /*  Spiral out from position asteroid_x, asteroid_y. If we spot an asteroid,
+        Then zero out all the blocked  positions (by repeating the relative offset until we reach the edge)
+        Iterate over rows, from row asteroid_i, asteroid_i+1, ... N then asteroid_i-1, asteroid_i-2, .. 0
+    */
+    assert_eq!(asteroid_matrix[asteroid_i][asteroid_j], 1);
+    let n = asteroid_matrix.len();
+    let m = asteroid_matrix[0].len();
+    for i in get_indices(asteroid_i, n) {
+        for j in get_indices(asteroid_j, m) {
+            if i == asteroid_i && j == asteroid_j {
+                continue;
+            }
+
+            if asteroid_matrix[i][j] == 1 {
+                // Then calculate the offset between this asteroid and asteroid_i, asteroid_j.
+                // Set all blocked positions to zero.
+                hide_blocked_asteroids(&mut asteroid_matrix, asteroid_i, asteroid_j, i, j);
+            }
+        }
+    }
+    // Now we should have gotten rid of all asteroids that can't be seen from (asteroid_i, asteroid_j).
+    // So just get the indices of the non-zero elements
+
+    let mut non_zero_indices: Vec<[usize; 2]> = Vec::new();
+
+    for (i, row) in asteroid_matrix.iter().enumerate() {
+        for (j, value) in row.iter().enumerate() {
+            if i == asteroid_i && j == asteroid_j {
+                continue
+            }
+            if *value == 1 {
+                non_zero_indices.push([i, j])
+            }
+        }
+    }
+    non_zero_indices
 }
 
 fn count_nonzero(asteroid_matrix: &Vec<Vec<u8>>) -> u32 {
