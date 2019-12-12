@@ -1,4 +1,4 @@
-// Day 5
+// Day 7
 
 use std::error::Error;
 use std::fs;
@@ -68,6 +68,51 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
 
     println!("Largest possible output: {}", max_output);
     println!("Config: {:?}", max_config);
+
+    // Part 2: Hook the output of E to the input of A.
+    // The phase values are [0,1,2,3,4], but in an unknown order.
+    let mut max_output = 0;
+    let mut max_config = (0, 0, 0, 0, 0);
+    for a in 5..9 {
+        for b in 5..9 {
+            if a == b {
+                continue;
+            }
+            for c in 5..9 {
+                if c == a || c == b {
+                    continue;
+                }
+                for d in 5..9 {
+                    if d == a || d == b || d == c {
+                        continue;
+                    }
+                    for e in 5..9 {
+                        if e == a || e == b || e == c || e == d {
+                            continue;
+                        }
+                        let input_value = 0;
+                        
+                        // Loop here                        
+                        let mut amplifier_a: Amplifier = Amplifier::new(instruction_set.clone());
+                        let mut amplifier_b: Amplifier = Amplifier::new(instruction_set.clone());
+                        let mut amplifier_c: Amplifier = Amplifier::new(instruction_set.clone());
+                        let mut amplifier_d: Amplifier = Amplifier::new(instruction_set.clone());
+                        let mut amplifier_e: Amplifier = Amplifier::new(instruction_set.clone());
+                        amplifier_a.run_tape(input_value, a);
+                        amplifier_b.run_tape(amplifier_a.output_signal.unwrap(), b);
+                        amplifier_c.run_tape(amplifier_b.output_signal.unwrap(), c);
+                        amplifier_d.run_tape(amplifier_c.output_signal.unwrap(), d);
+                        amplifier_e.run_tape(amplifier_d.output_signal.unwrap(), e);
+                        let output_signal = amplifier_e.output_signal.unwrap();
+                        if output_signal > max_output {
+                            max_output = output_signal;
+                            max_config = (a, b, c, d, e);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     Ok(())
 }

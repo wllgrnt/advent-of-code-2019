@@ -28,16 +28,33 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     // After each cycle it should move 1 square.
     let mut compiler: Compiler = Compiler::new(instruction_set.clone());
 
-    let grid_size: usize = 80; // Gonna hack this, if too small and we overflow I'll just bump it up.
+    let grid_size: usize = 10000; // Gonna hack this, if too small and we overflow I'll just bump it up.
     let mut grid: Vec<Vec<u8>> = vec![vec![0; grid_size]; grid_size];
 
     let mut robot: Robot = Robot::new(&mut grid, &mut compiler);
     robot.run();
-    // Print the grid
-    print_grid(&robot.grid);
+    
+    // Count the painted tiles 
+    println!("painted tiles: {}",count_nonzero(robot.grid));
+    // print_grid(&robot.grid);
+
+
 
     Ok(())
 }
+
+fn count_nonzero(matrix: &Vec<Vec<u8>>) -> u32 {
+    let mut nonzero = 0;
+    for row in matrix.iter() {
+        for value in row.iter() {
+            if *value != 0 {
+                nonzero += 1;
+            }
+        }
+    }
+    nonzero
+}
+
 
 struct Robot<'a> {
     grid: &'a mut Vec<Vec<u8>>,
@@ -66,19 +83,78 @@ impl<'a> Robot<'a> {
             let input_signal = self.grid[self.position[0]][self.position[1]] as i64;
 
             // Run the Intcode compiler until we receive an output
-            self.compiler.run_tape(input_signal);
+            let output_signals = self.compiler.run_tape(input_signal);
 
-            // We receive two output values
-            let output_signal = self.compiler.output_signal;
+            // Should be a better way to do this
+            let paint_color: u8;
+            let direction_of_turn: u8; 
+            
+            match output_signals {
+                None => break,
+                Some(signals) => {
+                    paint_color = signals[0] as u8;
+                    direction_of_turn = signals[1] as u8;
+                }
+            }
+
+            assert!(paint_color == 1 || paint_color == 0 );
 
             if self.compiler.halt_signal {
                 break;
             }
+
+            // Paint the current tile
+            self.grid[self.position[0]][self.position[1]] = paint_color;
+
+            // Turn the robot
+            println!("Old direction: {:?}", self.direction);
+            self.direction = turn_robot(self.direction, direction_of_turn);
+            println!("Turn signal {}, new direction: {:?}", direction_of_turn, self.direction);
+            println!("Old position {:?}", self.position );
+            
+            let new_x = self.position[0] as i32 + 1*self.direction[0] as i32;
+            let new_y = self.position[1] as i32 + 1*self.direction[1] as i32;
+            self.position = [new_x as usize, new_y as usize];
+            println!("New position {:?}", self.position );
+            println!("");
         }
 
         // Read the current position
     }
 }
+fn turn_robot(current_direction: [i8;2], turn_direction: u8) -> [i8;2 ] {
+
+    // The current direction is either [1,0], [-1,0], [0,1] or [0,-1]
+    // The turn direction is either 0 (turn left 90 degrees) or 1 (turn right 90 degrees)
+
+    // Turn left means [0,1] -> [-1, 0], [-1,0] -> [0,-1], [0,-1] -> [1,0], [1,0] -> [0,1]
+
+    if turn_direction == 0 {
+        match current_direction {
+            [0,1] => [-1,0],
+            [-1,0] => [0,-1],
+            [0,-1] => [1,0],
+            [1,0] => [0,1],
+            _ => panic!("unexpected direction")
+        }
+    }
+    else if turn_direction == 1 {
+        match current_direction {
+            [0,1] => [1,0],
+            [1,0] => [0, -1],
+            [0,-1] => [-1, 0],
+            [-1,0] => [0,1],
+            _ => panic!("unexpected direction")
+        }
+    }
+    else {
+        panic!("unexpected turn signal")
+    }
+
+
+
+}
+
 
 fn print_grid(grid: &Vec<Vec<u8>>) -> () {
     for row in grid {
@@ -259,7 +335,8 @@ impl Compiler {
         }
     }
 
-    fn run_tape(&mut self, input_value: i64) -> () {
+    fn run_tape(&mut self, input_value: i64) -> Option<[i64;2]> {
+        let mut output_signals: Vec<i64> = Vec::new(); 
         loop {
             // Read the memory at the cursor position, and parse the opcode.
             let instruction = Instruction::new(&self.memory, self.cursor);
@@ -269,10 +346,14 @@ impl Compiler {
                 OpcodeKind::Input => self.process_instruction(&instruction, Some(input_value)),
                 OpcodeKind::Exit => {
                     self.halt_signal = true;
-                    break;
+                    return None;
                 }
                 OpcodeKind::Output => {self.process_instruction(&instruction, None);
-                    break;
+                    let output_signal = self.output_signal;
+                    output_signals.push(output_signal.unwrap());
+                    if output_signals.len() == 2 {
+                        return Some([output_signals[0], output_signals[1]]);
+                    }
                 }
                 _ => self.process_instruction(&instruction, None),
             }
@@ -380,18 +461,18 @@ impl Compiler {
                     0 => {
                         let position: usize = instruction.parameters[0] as usize;
                         let value = self.memory[position];
-                        println!("***********Instruction output: {}", value);
+                        // println!("***********Instruction output: {}", value);
                         Some(value)
                     }
                     1 => {
                         let value = instruction.parameters[0];
-                        println!("***********Instruction output: {}", value);
+                        // println!("***********Instruction output: {}", value);
                         Some(value)
                     }
                     2 => {
                         let position = instruction.parameters[0] + self.relative_base;
                         let value = self.memory[position as usize];
-                        println!("***********Instruction output: {}", value);
+                        // println!("***********Instruction output: {}", value);
                         Some(value)
                     }
                     _ => panic!("unexpected mode"),
