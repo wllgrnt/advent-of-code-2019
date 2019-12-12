@@ -1,5 +1,6 @@
 // Day 12
 
+use std::cmp::{max, min};
 use std::error::Error;
 use std::fs;
 use std::process;
@@ -26,40 +27,103 @@ fn run(filename: &str) -> Result<(), Box<dyn Error>> {
     The update the position by applying velocity
     */
 
-
     let mut velocities = vec![vec![0; 3]; 4];
     let mut t = 1;
-    loop {
 
+    // Part 2: Determine the number of steps that must occur before all of the moons' positions and velocities exactly match a previous point in time.
+    // The x, y and z coordinates are independent of each other, so the length of the cycle is the least common multiple of the lengths of the x, y and z cycle
+    let initial_x_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[0]).collect();
+    let initial_y_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[1]).collect();
+    let initial_z_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[2]).collect();
+
+    let initial_x_velocities: Vec<i32> = vec![0; 4];
+    let initial_y_velocities: Vec<i32> = vec![0; 4];
+    let initial_z_velocities: Vec<i32> = vec![0; 4];
+
+    let mut periods_found = [false, false, false];
+    let mut peroids = [0, 0, 0];
+    loop {
         update_velocities(&mut velocities, &mut positions);
         update_positions(&mut velocities, &mut positions);
 
-        println! {"Step number {}", t};
-        for i in 0..velocities.len() {
-            println!(
-                "Position: {:?}  Velocity: {:?}",
-                positions[i], velocities[i]
-            );
-        }
+        // println! {"Step number {}", t};
+        // for i in 0..velocities.len() {
+        //     println!(
+        //         "Position: {:?}  Velocity: {:?}",
+        //         positions[i], velocities[i]
+        //     );
+        // }
 
         let potential_energies = get_potential_energy(&positions);
         let kinetic_energies = get_kinetic_energy(&velocities);
         let mut total_energy = 0;
-        
         for i in 0..potential_energies.len() {
             let e_p = potential_energies[i];
             let e_k = kinetic_energies[i];
-            total_energy += e_p*e_k;
+            total_energy += e_p * e_k;
         }
-        println!("Total energy: {}", total_energy);
-        println!("");
-
         if t == 1000 {
+            println!("Total energy after 1000 steps: {}", total_energy);
+            println!("");
+        }
+        let x_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[0]).collect();
+        let y_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[1]).collect();
+        let z_positions: Vec<i32> = positions.clone().into_iter().map(|d| d[2]).collect();
+        let x_velocities: Vec<i32> = velocities.clone().into_iter().map(|d| d[0]).collect();
+        let y_velocities: Vec<i32> = velocities.clone().into_iter().map(|d| d[1]).collect();
+        let z_velocities: Vec<i32> = velocities.clone().into_iter().map(|d| d[2]).collect();
+
+        if !periods_found[0]
+            && x_positions == initial_x_positions
+            && x_velocities == initial_x_velocities
+        {
+            println!("x-Period: {}", t);
+            periods_found[0] = true;
+            peroids[0] = t;
+        }
+        if !periods_found[1]
+            && y_positions == initial_y_positions
+            && y_velocities == initial_y_velocities
+        {
+            println!("y-Period: {}", t);
+            periods_found[1] = true;
+            peroids[1] = t;
+        }
+        if !periods_found[2]
+            && z_positions == initial_z_positions
+            && z_velocities == initial_z_velocities
+        {
+            println!("z-Period: {}", t);
+            periods_found[2] = true;
+            peroids[2] = t;
+        }
+        if periods_found == [true, true, true] {
+            println!(
+                "Steps taken before positions and velocities back to initial state: {}",
+                lcm(lcm(peroids[0], peroids[1]), peroids[2]) as i64
+            );
             break;
         }
         t += 1;
     }
     Ok(())
+}
+
+fn gcd(a: usize, b: usize) -> usize {
+    match ((a, b), (a & 1, b & 1)) {
+        ((x, y), _) if x == y => y,
+        ((0, x), _) | ((x, 0), _) => x,
+        ((x, y), (0, 1)) | ((y, x), (1, 0)) => gcd(x >> 1, y),
+        ((x, y), (0, 0)) => gcd(x >> 1, y >> 1) << 1,
+        ((x, y), (1, 1)) => {
+            let (x, y) = (min(x, y), max(x, y));
+            gcd((y - x) >> 1, x)
+        }
+        _ => unreachable!(),
+    }
+}
+fn lcm(a: usize, b: usize) -> usize {
+    a * b / gcd(a, b)
 }
 
 fn get_potential_energy(p: &Vec<Vec<i32>>) -> Vec<i32> {
